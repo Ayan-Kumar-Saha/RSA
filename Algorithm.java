@@ -4,7 +4,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.math.BigInteger;
-import java.util.Random;
 
 public class Algorithm {
 
@@ -14,13 +13,11 @@ public class Algorithm {
 
         int choice = 0;
 
-        String currentUserName = null , receiverUserName = null;
-
-        String plaintext;
-
-        byte[] ciphertext;
+        String currentUserName = null, receiverUserName = null, plaintext, ciphertext;
 
         User currentUser = new User();
+
+        RSA rsa = new RSA();
 
         do {
             System.out.println("\n\n--MAIN MENU--");
@@ -38,13 +35,9 @@ public class Algorithm {
 
                         currentUserName = inputData("\nEnter your username: ");
 
-                        Random r = new Random();
+                        rsa.generateKeyPair();
 
-                        BigInteger p = BigInteger.probablePrime(RSAImplementation.bitLength, r);
-
-                        BigInteger q = BigInteger.probablePrime(RSAImplementation.bitLength, r);
-
-                        setCurrentUser(currentUser, currentUserName, p, q);
+                        setCurrentUser(currentUser, currentUserName, rsa);
 
                         createPublicKeyFile(currentUser);
 
@@ -63,9 +56,9 @@ public class Algorithm {
 
                         plaintext = inputData("\nEnter the message to encrypt: ");
 
-                        RSAResponse rsp = currentUser.getReceiverPublicKey();
+                        RSAKey receiverPublicKey = currentUser.getReceiverPublicKey();
 
-                        ciphertext = RSAImplementation.doEncryption(plaintext, rsp);
+                        ciphertext = rsa.encrypt(plaintext, receiverPublicKey);
 
                         createEncryptedMessageFile(currentUser, ciphertext);
 
@@ -75,9 +68,9 @@ public class Algorithm {
 
                         ciphertext = getEncryptedMessageFromFile(currentUser);
 
-                        RSAResponse ursp = currentUser.getUserKeyPair();
+                        RSAKey currentUserPrivateKey = currentUser.getUserPrivateKey();
 
-                        plaintext = RSAImplementation.doDecryption(ciphertext, ursp);
+                        plaintext = rsa.decrypt(ciphertext, currentUserPrivateKey);
 
                         System.out.print("\nYour decrypted message is: " + plaintext);
 
@@ -107,14 +100,18 @@ public class Algorithm {
         return br.readLine();
     }
 
-    private static void setCurrentUser(User currentUser, String currentUserName, final BigInteger p, final BigInteger q) {
+    private static void setCurrentUser(User currentUser, String currentUserName, RSA rsa) {
 
         currentUser.setUserName(currentUserName);
-        currentUser.setPQ(p, q);
 
-        RSAResponse currentUserKeyPair = RSAImplementation.prepare(p, q);
+        RSAKey currentUserPublicKey = rsa.getPublicKey();
 
-        currentUser.setUserKeyPair(currentUserKeyPair);
+        currentUser.setUserPublicKey(currentUserPublicKey);
+
+        RSAKey currentUserPrivateKey = rsa.getPrivateKey();
+
+        currentUser.setUserPrivateKey(currentUserPrivateKey);
+
     }
 
     private static void createLink(User currentUser, String currentUserName, String receiverUserName) throws IOException {
@@ -123,9 +120,9 @@ public class Algorithm {
 
         currentUser.setReceiverName(receiverUserName);
 
-        RSAResponse rsp = getReceiverPublicKeyFromFile(receiverUserName);
+        RSAKey receiverPublicKey = getReceiverPublicKeyFromFile(receiverUserName);
 
-        currentUser.setReceiverPublicKey(rsp);
+        currentUser.setReceiverPublicKey(receiverPublicKey);
 
         System.out.println("\nPublic Key fetched successfully !");
 
@@ -135,18 +132,18 @@ public class Algorithm {
         
         FileWriter fw = new FileWriter("pk-" + currentUser.getUserName() + ".txt");
 
-        RSAResponse rsp = currentUser.getUserKeyPair();
+        RSAKey userPublicKey = currentUser.getUserPublicKey();
 
-        String output = String.format("[ Public key exponent(kp) : " + rsp.getPublicKeyExponent() + " , Modulus(n) : " + rsp.getModulus()) + " ]";
+        String publicKey = String.format("[ Public key exponent(kp) : " + userPublicKey.getExponent() + " , Modulus(n) : " + userPublicKey.getModulus() + " ]");
+
+        fw.write(publicKey);
 
         System.out.println("\nPublic key is stored in pk-"+ currentUser.getUserName() + ".txt");
-
-        fw.write(output);
 
         fw.close();
     }
 
-    private static RSAResponse getReceiverPublicKeyFromFile(String receiverUserName) throws IOException {
+    private static RSAKey getReceiverPublicKeyFromFile(String receiverUserName) throws IOException {
 
         BufferedReader br = new BufferedReader(new FileReader("pk-" + receiverUserName + ".txt"));
 
@@ -162,39 +159,26 @@ public class Algorithm {
 
         br.close();
 
-        return new RSAResponse(kp, n);
+        return new RSAKey(kp, n);
     }
 
-    private static void createEncryptedMessageFile(User currentUser, byte[] ciphertext) throws IOException {
+    private static void createEncryptedMessageFile(User currentUser, String ciphertext) throws IOException {
 
         FileWriter fw = new FileWriter("msg-" + currentUser.getReceiverName() + ".txt");
 
-        String csv = "";
-
-        for (int value : ciphertext) csv += Integer.toString(value) + ",";
-
-        fw.write(csv);
+        fw.write(ciphertext);
 
         System.out.println("\nYour encrypted message is stored in msg-" + currentUser.getReceiverName() + ".txt" );
 
         fw.close();
     }
 
-    private static byte[] getEncryptedMessageFromFile(User currentUser) throws IOException {
+    private static String getEncryptedMessageFromFile(User currentUser) throws IOException {
 
         BufferedReader br = new BufferedReader(new FileReader("msg-" + currentUser.getUserName() + ".txt"));
 
-        String line;
+        String msg = br.readLine();
 
-        String[] csv = null;
-
-        while ((line = br.readLine()) != null) 
-            csv = line.split(",");
-
-        byte[] msg = new byte[csv.length];
-
-        for (int i = 0 ; i < csv.length ; i++) msg[i] = (byte) Integer.parseInt(csv[i]);
-        
         br.close();
 
         return msg;
