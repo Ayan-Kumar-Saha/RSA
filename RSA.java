@@ -83,8 +83,6 @@ public class RSA {
 
         BigInteger n = privateKey.getModulus();
 
-        System.out.println(ciphertext);
-
         byte[] ciphertextInBytes = Service.convertStringtoBytes(ciphertext);
 
         byte[] plaintextInBytes = (new BigInteger(ciphertextInBytes)).modPow(ks, n).toByteArray();
