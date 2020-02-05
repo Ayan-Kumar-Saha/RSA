@@ -1,7 +1,7 @@
 import java.util.Random;
 import java.math.BigInteger;
 
-public class RSA {
+public class RSA implements Crypto {
 
     private int keyBitLength = 1024;
 

@@ -17,7 +17,7 @@ public class Algorithm {
 
         User currentUser = new User();
 
-        RSA rsa = new RSA();
+        Crypto crypto = new RSA();
 
         do {
             System.out.println("\n\n--MAIN MENU--");
@@ -35,9 +35,9 @@ public class Algorithm {
 
                         currentUserName = inputData("\nEnter your username: ");
 
-                        rsa.generateKeyPair();
+                        crypto.generateKeyPair();
 
-                        setCurrentUser(currentUser, currentUserName, rsa);
+                        setCurrentUser(currentUser, currentUserName, crypto);
 
                         createPublicKeyFile(currentUser);
 
@@ -58,7 +58,7 @@ public class Algorithm {
 
                         RSAKey receiverPublicKey = currentUser.getReceiverPublicKey();
 
-                        ciphertext = rsa.encrypt(plaintext, receiverPublicKey);
+                        ciphertext = crypto.encrypt(plaintext, receiverPublicKey);
 
                         createEncryptedMessageFile(currentUser, ciphertext);
 
@@ -70,7 +70,7 @@ public class Algorithm {
 
                         RSAKey currentUserPrivateKey = currentUser.getUserPrivateKey();
 
-                        plaintext = rsa.decrypt(ciphertext, currentUserPrivateKey);
+                        plaintext = crypto.decrypt(ciphertext, currentUserPrivateKey);
 
                         System.out.print("\nYour decrypted message is: " + plaintext);
 
@@ -100,15 +100,15 @@ public class Algorithm {
         return br.readLine();
     }
 
-    private static void setCurrentUser(User currentUser, String currentUserName, RSA rsa) {
+    private static void setCurrentUser(User currentUser, String currentUserName, Crypto crypto) {
 
         currentUser.setUserName(currentUserName);
 
-        RSAKey currentUserPublicKey = rsa.getPublicKey();
+        RSAKey currentUserPublicKey = crypto.getPublicKey();
 
         currentUser.setUserPublicKey(currentUserPublicKey);
 
-        RSAKey currentUserPrivateKey = rsa.getPrivateKey();
+        RSAKey currentUserPrivateKey = crypto.getPrivateKey();
 
         currentUser.setUserPrivateKey(currentUserPrivateKey);
 
